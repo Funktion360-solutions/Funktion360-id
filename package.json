@@ -1,0 +1,13 @@
+{
+  "name": "funktion360-id",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "pnpm --filter @funktion360/identity-client test",
+    "typecheck": "pnpm --filter @funktion360/identity-client typecheck"
+  }
+}
