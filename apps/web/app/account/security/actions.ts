@@ -7,19 +7,29 @@ export async function enroll(_previous:Enrollment,form:FormData):Promise<Enrollm
  const db=await client();const {data:{user},error}=await db.auth.getUser();
  if(error || !user?.email)redirect('/login');
  await requireMfa(db,user);
- if(user.factors?.some(f=>f.status==='verified'))return {error:'Totrinsbekræftelse er allerede aktiveret.'};
+ let existing=user.factors?.filter(f=>f.status==='verified') || [];
+ if(existing.length>=2)return {error:'Du har allerede to aktive authenticators.'};
  const password=String(form.get('password') || '');
  if(!password || password.length>128)return {error:'Indtast din nuværende ID-adgangskode.'};
  const {data,error:reauthError}=await db.auth.signInWithPassword({email:user.email,password});
  if(reauthError || data.user?.id!==user.id)return {error:'Adgangskoden kunne ikke bekræftes.'};
  const {data:{user:fresh},error:freshError}=await db.auth.getUser();
- if(freshError || fresh?.id!==user.id || fresh.factors?.some(f=>f.status==='verified'))return {error:'Kontostatus er ændret. Genindlæs siden.'};
+ if(freshError || fresh?.id!==user.id)return {error:'Kontostatus er ændret. Genindlæs siden.'};
+ existing=fresh.factors?.filter(f=>f.status==='verified') || [];
+ if(existing.length>=2)return {error:'Du har allerede to aktive authenticators.'};
+ if(existing.length){
+   const factorId=String(form.get('currentFactorId') || '');const code=String(form.get('currentCode') || '').trim();
+   if(!fresh.factors?.some(f=>f.id===factorId && f.status==='verified' && f.factor_type==='totp') || !/^[0-9]{6}$/.test(code))return {error:'Bekræft med en frisk kode fra din eksisterende authenticator.'};
+   const checked=await db.auth.mfa.challengeAndVerify({factorId,code});
+   const assurance=await db.auth.mfa.getAuthenticatorAssuranceLevel();
+   if(checked.error || assurance.error || assurance.data.currentLevel!=='aal2')return {error:'Din eksisterende authenticator kunne ikke bekræftes.'};
+ }
  // Remove only abandoned enrollments created by this screen, never verified factors.
- for(const factor of fresh.factors || [])if(factor.status==='unverified' && factor.factor_type==='totp' && factor.friendly_name==='Funktion360 ID'){
+ for(const factor of fresh.factors || [])if(factor.status==='unverified' && factor.factor_type==='totp' && ['Funktion360 ID','Funktion360 ID backup'].includes(factor.friendly_name || '')){
    const {error:cleanupError}=await db.auth.mfa.unenroll({factorId:factor.id});
    if(cleanupError)return {error:'Den tidligere opsætning kunne ikke afsluttes. Prøv igen.'};
  }
- const {data:enrollment,error:enrollError}=await db.auth.mfa.enroll({factorType:'totp',friendlyName:'Funktion360 ID',issuer:'Funktion360 ID'});
+ const {data:enrollment,error:enrollError}=await db.auth.mfa.enroll({factorType:'totp',friendlyName:existing.length?'Funktion360 ID backup':'Funktion360 ID',issuer:'Funktion360 ID'});
  if(enrollError || !enrollment)return {error:'Opsætningen kunne ikke startes. Kontrollér, at TOTP er aktiveret i Supabase.'};
  return {factorId:enrollment.id,qr:enrollment.totp.qr_code,secret:enrollment.totp.secret};
 }
@@ -39,9 +49,10 @@ export async function disable(_previous:{error?:string},form:FormData):Promise<{
  const db=await client();const {data:{user},error}=await db.auth.getUser();
  if(error || !user)redirect('/login');
  await requireMfa(db,user);
- const factorId=String(form.get('factorId') || '');const code=String(form.get('code') || '').trim();
+ const factorId=String(form.get('factorId') || '');const verifierId=String(form.get('verifierId') || '');const code=String(form.get('code') || '').trim();
+ if(!user.factors?.some(f=>f.id===verifierId && f.status==='verified' && f.factor_type==='totp'))return {error:'Vælg en aktiv authenticator til bekræftelsen.'};
  if(form.get('confirm')!=='yes' || !user.factors?.some(f=>f.id===factorId && f.status==='verified' && f.factor_type==='totp') || !/^[0-9]{6}$/.test(code))return {error:'Bekræft deaktiveringen og indtast en frisk kode.'};
- const {error:verificationError}=await db.auth.mfa.challengeAndVerify({factorId,code});
+ const {error:verificationError}=await db.auth.mfa.challengeAndVerify({factorId:verifierId,code});
  if(verificationError)return {error:'Koden kunne ikke bekræftes.'};
  const {data:assurance,error:assuranceError}=await db.auth.mfa.getAuthenticatorAssuranceLevel();
  if(assuranceError || assurance.currentLevel!=='aal2')return {error:'MFA kunne ikke bekræftes.'};
