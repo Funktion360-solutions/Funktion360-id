@@ -6,7 +6,7 @@ This repository owns the shared identity client and will own the central login a
 
 ## Current status
 
-Server-side OIDC client foundation with PKCE, state, nonce, signed token validation and single-use login transactions. No live SSO, portal or database migration has been activated.
+Next.js account portal with login, signup, email confirmation, profile editing, organisation visibility and OAuth consent. The shared OIDC client has PKCE, state, nonce and signed token validation. A Vores Kok local pilot has verified manual linking and product login. Hosted deployment has not yet been verified.
 
 ## Products
 
@@ -27,3 +27,5 @@ pnpm typecheck
 ```
 
 See [implementation constraints and migration requirements](docs/implementation.md). The client must run on the server; it does not itself provide sessions or product database access.
+
+See [Vercel deployment setup](docs/deployment.md).

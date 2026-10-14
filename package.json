@@ -7,7 +7,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "test": "pnpm --filter @funktion360/identity-client test",
+    "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "dev": "pnpm --filter @funktion360/id-web dev",
     "build": "pnpm --filter @funktion360/id-web build"

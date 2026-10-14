@@ -26,7 +26,7 @@ alter table public.id_organizations enable row level security;
 alter table public.id_memberships enable row level security;
 revoke all on public.id_profiles,public.id_organizations,public.id_memberships from public,anon,authenticated;
 grant select,insert on public.id_profiles to authenticated;
-grant update(display_name) on public.id_profiles to authenticated;
+grant update(user_id,display_name) on public.id_profiles to authenticated;
 grant select on public.id_organizations,public.id_memberships to authenticated;
 create policy own_profile_read on public.id_profiles for select to authenticated using ((select auth.uid())=user_id);
 create policy own_profile_insert on public.id_profiles for insert to authenticated with check ((select auth.uid())=user_id);

@@ -7,3 +7,5 @@ dist/
 coverage/
 .id-update-backups/
 *.tsbuildinfo
+
+.vercel/
