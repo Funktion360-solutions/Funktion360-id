@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import {requireMfa} from '../../../lib/mfa';
 import {redirect} from 'next/navigation';
 import {client,configured} from '../../../lib/supabase';
 import {authorizationId,authPath,providerRedirect} from '../../../lib/authorization';
@@ -12,6 +13,7 @@ export default async function Consent({searchParams}:{searchParams:Promise<{auth
   const supabase=await client();
   const {data:{user},error:authError}=await supabase.auth.getUser();
   if(authError || !user) redirect(authPath('login',id));
+  await requireMfa(supabase,user,id);
   const {data,error}=await supabase.auth.oauth.getAuthorizationDetails(id);
   if(error || !data) return <section className="card"><h1>Loginforsøget er udløbet</h1><p>Start login igen fra produktet.</p></section>;
   if(!('authorization_id' in data)) redirect(providerRedirect(data.redirect_url));

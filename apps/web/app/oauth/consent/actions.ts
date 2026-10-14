@@ -1,4 +1,5 @@
 'use server';
+import {requireMfa} from '../../../lib/mfa';
 import {redirect} from 'next/navigation';
 import {client} from '../../../lib/supabase';
 import {authorizationId,authPath,providerRedirect} from '../../../lib/authorization';
@@ -9,6 +10,7 @@ export async function decide(form:FormData) {
   const supabase=await client();
   const {data:{user},error:authError}=await supabase.auth.getUser();
   if(authError || !user) redirect(authPath('login',id));
+  await requireMfa(supabase,user,id);
   const {data:details,error:detailsError}=await supabase.auth.oauth.getAuthorizationDetails(id);
   if(detailsError || !details) redirect('/oauth/consent?notice=invalid');
   if(!('authorization_id' in details)) redirect(providerRedirect(details.redirect_url));

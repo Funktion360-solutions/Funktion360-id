@@ -1,5 +1,6 @@
 import styles from './account.module.css';
 import {SaveButton} from './save-button';
+import {requireMfa} from '../../lib/mfa';
 import {redirect} from 'next/navigation';
 import {client,configured} from '../../lib/supabase';
 import {saveProfile,logout} from '../actions';
@@ -10,6 +11,7 @@ export default async function Account({searchParams}:{searchParams:Promise<{noti
   const supabase=await client();
   const {data:{user},error}=await supabase.auth.getUser();
   if(error || !user) redirect('/login');
+  await requireMfa(supabase,user);
   const [profile,memberships]=await Promise.all([supabase.from('id_profiles').select('display_name').eq('user_id',user.id).maybeSingle(),supabase.from('id_memberships').select('organization_id,role,status,id_organizations(name,kind)').eq('user_id',user.id).eq('status','active')]);
   return <section className={styles.account}>
     <header className={styles.heading}><div><span className="eyebrow">MIN PERSONLIGE KONTO</span><h1>Dit Funktion360 ID</h1><p>Et fælles login til dine produkter. Et sted til din profil.</p></div><span className={styles.badge}>Funktion360 ID</span></header>

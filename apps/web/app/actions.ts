@@ -1,4 +1,5 @@
 'use server';
+import {requireMfa} from '../lib/mfa';
 import { redirect } from 'next/navigation';
 import { client, origin } from '../lib/supabase';
 import {authorizationId,authPath,consentPath} from '../lib/authorization';
@@ -10,8 +11,10 @@ function credentials(form: FormData) {
 }
 export async function login(form: FormData) {
   const supabase = await client();
-  const {error} = await supabase.auth.signInWithPassword(credentials(form));
+  const {data,error} = await supabase.auth.signInWithPassword(credentials(form));
   if(error) redirect(authPath('login',authorizationId(form.get('authorization_id')),'failed'));
+  if(!data.user)redirect('/login?notice=failed');
+  await requireMfa(supabase,data.user,authorizationId(form.get('authorization_id')));
   redirect(consentPath(authorizationId(form.get('authorization_id'))));
 }
 export async function signup(form: FormData) {
@@ -30,6 +33,7 @@ export async function saveProfile(form: FormData) {
   const supabase=await client();
   const {data:{user},error:authError}=await supabase.auth.getUser();
   if(authError || !user) redirect('/login');
+  await requireMfa(supabase,user);
   const name=String(form.get('display_name') || '').trim();
   if(!name || name.length>100) redirect('/account?notice=invalid');
   const {error}=await supabase.from('id_profiles').upsert({user_id:user.id,display_name:name},{onConflict:'user_id'});
