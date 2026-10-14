@@ -8,6 +8,8 @@
   },
   "scripts": {
     "test": "pnpm --filter @funktion360/identity-client test",
-    "typecheck": "pnpm --filter @funktion360/identity-client typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "dev": "pnpm --filter @funktion360/id-web dev",
+    "build": "pnpm --filter @funktion360/id-web build"
   }
 }

@@ -1,0 +1,2 @@
+import Link from 'next/link';
+export default function Home(){return <section className="hero"><span className="eyebrow">FUNKTION360 ID</span><h1>Én konto.<br/>Dit Funktion360.</h1><p>Et fælles sted til din profil og dine organisationer. Dine data bliver i det produkt, hvor de hører hjemme.</p><div className="buttons"><Link className="button" href="/login">Log ind</Link><Link className="secondary" href="/signup">Opret konto</Link></div><div className="products">Vores Kok · Dej · Favn360 · Studiemakker · Administration</div></section>}
